@@ -82,6 +82,7 @@ async function run() {
       }
     });
 
+
     // save a user in db
     app.put("/user", async (req, res) => {
       const user = req.body;
@@ -90,7 +91,15 @@ async function run() {
       // check if user already exist in the db
       const isExist = await usersCollection.findOne(query);
       if (isExist) {
-        return res.send(isExist)
+        if(user.status === 'Requested'){
+          const result = await usersCollection.updateOne(query, {
+            $set: {status: user?.status}
+          })
+          return res.send(result)
+        }
+        else{
+          return res.send(isExist)
+        }
       }
 
       // save the user for the first time
@@ -104,6 +113,13 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc, option);
       res.send(result);
     });
+
+    
+    // get all users
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
 
     // Get all rooms
     app.get("/rooms", async (req, res) => {
