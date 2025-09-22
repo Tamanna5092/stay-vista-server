@@ -327,6 +327,33 @@ async function run() {
       res.send({bookingDetails, totalRooms, totalBookings:bookingDetails.length, totalSales, chartData, hostSince:timeStamp})
     })
 
+      // guest statistics
+    app.get('/guest-stat', verifyToken, async (req, res) => {
+      const {email} = req.user
+      const bookingDetails = await bookingsCollection.find(
+        { 'guest.email': email }, 
+        {
+          projection: {
+        price: 1,
+        date: 1,
+      }
+    }
+  ).toArray()
+      const totalSpent = bookingDetails.reduce((sum, booking) => sum + booking.price, 0)
+      const {timeStamp} = await usersCollection.findOne(
+        {email},
+        {projection: {timeStamp: 1}}
+      )
+      const chartData = bookingDetails.map(booking => {
+        const day = new Date(booking.date).getDate()
+        const month = new Date(booking.date).getMonth() + 1
+        const date = [`${day}/${month}`, booking?.price]
+        return date
+      })
+      chartData.unshift(['Day', 'Sales'])
+      res.send({bookingDetails, totalBookings:bookingDetails.length, totalSpent, chartData, guestSince:timeStamp})
+    })
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
