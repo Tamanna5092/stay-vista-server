@@ -50,6 +50,7 @@ async function run() {
   try {
     const roomsCollection = client.db("stayVista").collection("rooms");
     const usersCollection = client.db("stayVista").collection("users");
+    const bookingsCollection = client.db("stayVista").collection("bookings");
 
     // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
@@ -221,6 +222,36 @@ async function run() {
       const result = await roomsCollection.find(query).toArray();
       res.send(result);
     });
+
+    // save a booking in db
+    app.post("/booking", verifyToken, async (req, res) => {
+      const bookingData = req.body;
+      const result = await bookingsCollection.insertOne(bookingData);
+
+      // change the room status to booked
+      // const roomId = bookingData?.roomId
+      // const query = { _id: new ObjectId(roomId) }
+      // const updateDoc = {
+      //   $set: { booked: true }
+      // }
+      // const updateRoom = await roomsCollection.updateOne(query, updateDoc)
+      // console.log(updateRoom)
+      // res.send({ result, updateRoom});
+      res.send(result)
+    });
+
+    // update room status to available
+    app.patch('/booking/:id', verifyToken, async (req, res) => {
+      const id = req.params.id
+      const status = req.body.status
+      const query = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: { booked: status }
+      }
+      const result = await roomsCollection.updateOne(query, updateDoc)
+      console.log(result)
+      res.send(result)
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
